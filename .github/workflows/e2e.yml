@@ -1,0 +1,88 @@
+name: e2e
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Start API (dev/prod)
+        run: |
+          docker run -d -p 3000:3000 ghcr.io/danielsilva-loanpro/sdet-interview-challenge:latest
+          # Wait for server
+          for i in {1..30}; do
+            if curl -fsS http://localhost:3000/dev/users >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1
+
+      - name: Run tests (dev)
+        env:
+          BASE_URL: http://localhost:3000
+        run: |
+          python -m pytest -q -k "test_users_api and dev" --junitxml=dev-results.xml
+
+      - name: Upload test report (dev)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-junitxml
+          path: dev-results.xml
+
+
+  test-prod:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Start API (dev/prod)
+        run: |
+          docker run -d -p 3000:3000 ghcr.io/danielsilva-loanpro/sdet-interview-challenge:latest
+          for i in {1..30}; do
+            if curl -fsS http://localhost:3000/prod/users >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1
+
+      - name: Run tests (prod)
+        env:
+          BASE_URL: http://localhost:3000
+        run: |
+          python -m pytest -q -k "test_users_api and prod" --junitxml=prod-results.xml
+
+      - name: Upload test report (prod)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prod-junitxml
+          path: prod-results.xml
+
+
