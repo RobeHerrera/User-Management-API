@@ -36,14 +36,17 @@ jobs:
         env:
           BASE_URL: http://localhost:3000
         run: |
-          python -m pytest -q -k "test_users_api and dev" --junitxml=dev-results.xml
+          mkdir -p reports
+          python -m pytest -q -k "test_users_api and dev" --junitxml=dev-results.xml --html=reports/dev-report.html --self-contained-html
 
       - name: Upload test report (dev)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dev-junitxml
-          path: dev-results.xml
+          path: |
+            dev-results.xml
+            reports/dev-report.html
 
 
   test-prod:
@@ -76,13 +79,16 @@ jobs:
         env:
           BASE_URL: http://localhost:3000
         run: |
-          python -m pytest -q -k "test_users_api and prod" --junitxml=prod-results.xml
+          mkdir -p reports
+          python -m pytest -q -k "test_users_api and prod" --junitxml=prod-results.xml --html=reports/prod-report.html --self-contained-html
 
       - name: Upload test report (prod)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: prod-junitxml
-          path: prod-results.xml
+          path: |
+            prod-results.xml
+            reports/prod-report.html
 
 
