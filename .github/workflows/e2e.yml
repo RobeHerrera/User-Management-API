@@ -6,8 +6,19 @@ on:
   pull_request:
 
 jobs:
-  test-dev:
+  test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - environment: dev
+            endpoint: dev
+            report_name: dev
+          - environment: prod
+            endpoint: prod
+            report_name: prod
+
     steps:
       - uses: actions/checkout@v4
 
@@ -22,76 +33,38 @@ jobs:
           pip install -r requirements.txt
           python -m playwright install --with-deps chromium
 
-      - name: Start API (dev/prod)
+      - name: Start API
         run: |
           docker run -d -p 3000:3000 ghcr.io/danielsilva-loanpro/sdet-interview-challenge:latest
-          # Wait for server
           for i in {1..30}; do
-            if curl -fsS http://localhost:3000/dev/users >/dev/null; then
+            if curl -fsS "http://localhost:3000/${{ matrix.endpoint }}/users" >/dev/null; then
               exit 0
             fi
             sleep 1
           done
           exit 1
 
-      - name: Run tests (dev)
+      - name: Run tests (${{ matrix.environment }})
         env:
           BASE_URL: http://localhost:3000
         run: |
           mkdir -p reports
-          python -m pytest -q -k "test_users_api and dev" --junitxml=dev-results.xml --html=reports/dev-report.html --self-contained-html
+          python -m pytest -q -k "test_users_api and ${{ matrix.environment }}" --junitxml=${{ matrix.report_name }}-results.xml --html=reports/${{ matrix.report_name }}-report.html --self-contained-html
 
-      - name: Upload test report (dev)
+      - name: Upload test results (${{ matrix.environment }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dev-junitxml
-          path: |
-            dev-results.xml
-            reports/dev-report.html
+          name: ${{ matrix.report_name }}-test-results
+          path: ${{ matrix.report_name }}-results.xml
+          if-no-files-found: warn
 
-
-  test-prod:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          python -m playwright install --with-deps chromium
-
-      - name: Start API (dev/prod)
-        run: |
-          docker run -d -p 3000:3000 ghcr.io/danielsilva-loanpro/sdet-interview-challenge:latest
-          for i in {1..30}; do
-            if curl -fsS http://localhost:3000/prod/users >/dev/null; then
-              exit 0
-            fi
-            sleep 1
-          done
-          exit 1
-
-      - name: Run tests (prod)
-        env:
-          BASE_URL: http://localhost:3000
-        run: |
-          mkdir -p reports
-          python -m pytest -q -k "test_users_api and prod" --junitxml=prod-results.xml --html=reports/prod-report.html --self-contained-html
-
-      - name: Upload test report (prod)
+      - name: Upload HTML report (${{ matrix.environment }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: prod-junitxml
-          path: |
-            prod-results.xml
-            reports/prod-report.html
+          name: ${{ matrix.report_name }}-html-report
+          path: reports/${{ matrix.report_name }}-report.html
+          if-no-files-found: warn
 
 
