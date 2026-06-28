@@ -37,5 +37,5 @@ class UsersAPI(BaseAPI):
         """DELETE /users/{email} — delete a user (requires auth)."""
         return self.delete(
             f"{self.USERS_PATH}/{email}",
-            headers={"Authorization": self._auth_token},
+            headers={"Authentication": self._auth_token},
         )

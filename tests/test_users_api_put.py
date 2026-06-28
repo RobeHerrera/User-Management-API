@@ -108,3 +108,44 @@ class TestPutUserAPI(BaseUserApiTest):
         assert resp.status == 400
         assert_error_response(resp.json())
 
+    # ---- Age Validation (1-150 range) ----
+    def test_update_user_age_minimum_valid_returns_200(self, random_user_payload):
+        """UPDATE with age=1 (minimum valid) should succeed."""
+        email = random_user_payload["email"]
+        self.api.create_user(random_user_payload)
+        
+        update_payload = create_user_payload(email, name="Updated", age=1)
+        resp = self.api.update_user(email, update_payload)
+        assert resp.status == 200
+        assert resp.json()["age"] == 1
+
+    def test_update_user_age_maximum_valid_returns_200(self, random_user_payload):
+        """UPDATE with age=150 (maximum valid) should succeed."""
+        email = random_user_payload["email"]
+        self.api.create_user(random_user_payload)
+        
+        update_payload = create_user_payload(email, name="Updated", age=150)
+        resp = self.api.update_user(email, update_payload)
+        assert resp.status == 200
+        assert resp.json()["age"] == 150
+
+    def test_update_user_age_zero_returns_400(self, random_user_payload):
+        """UPDATE with age=0 should return 400."""
+        email = random_user_payload["email"]
+        self.api.create_user(random_user_payload)
+        
+        update_payload = create_user_payload(email, name="Updated", age=0)
+        resp = self.api.update_user(email, update_payload)
+        assert resp.status == 400
+        assert_error_response(resp.json())
+
+    def test_update_user_age_151_returns_400(self, random_user_payload):
+        """UPDATE with age=151 should return 400."""
+        email = random_user_payload["email"]
+        self.api.create_user(random_user_payload)
+        
+        update_payload = create_user_payload(email, name="Updated", age=151)
+        resp = self.api.update_user(email, update_payload)
+        assert resp.status == 400
+        assert_error_response(resp.json())
+

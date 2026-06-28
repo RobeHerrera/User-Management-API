@@ -88,3 +88,32 @@ class TestPostUserAPI(AuthenticatedUserApiTest):
         assert resp.status == 400
         assert_error_response(resp.json())
 
+    # ---- Age Validation (1-150 range) ----
+    def test_create_user_age_minimum_valid_returns_201(self, unique_email):
+        """POST with age=1 (minimum valid) should succeed."""
+        payload = create_user_payload(unique_email, name="Newborn", age=1)
+        resp = self.api.create_user(payload)
+        assert resp.status == 201
+        assert resp.json()["age"] == 1
+
+    def test_create_user_age_maximum_valid_returns_201(self, unique_email):
+        """POST with age=150 (maximum valid) should succeed."""
+        payload = create_user_payload(unique_email, name="Elderly", age=150)
+        resp = self.api.create_user(payload)
+        assert resp.status == 201
+        assert resp.json()["age"] == 150
+
+    def test_create_user_age_zero_returns_400(self, unique_email):
+        """POST with age=0 should return 400."""
+        payload = create_user_payload(unique_email, name="Invalid", age=0)
+        resp = self.api.create_user(payload)
+        assert resp.status == 400
+        assert_error_response(resp.json())
+
+    def test_create_user_age_151_returns_400(self, unique_email):
+        """POST with age=151 should return 400."""
+        payload = create_user_payload(unique_email, name="Invalid", age=151)
+        resp = self.api.create_user(payload)
+        assert resp.status == 400
+        assert_error_response(resp.json())
+
